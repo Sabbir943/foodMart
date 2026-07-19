@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AIRecommendations from "@/components/AIRecommendations";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -418,6 +419,11 @@ export default function CustomerHomePage() {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/*  AI RECOMMENDATIONS                                                */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <AIRecommendations />
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/*  STATIC: HOW IT WORKS                                             */}

@@ -1,52 +1,105 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db.js";
-import Restaurant from "@/models/Restaurant.js";
-import { getMockVendor } from "@/lib/auth-mock.js";
+import { requireRole } from "@/lib/server-auth.js";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
+  const { user, error } = await requireRole("vendor", "admin");
+  if (error) return error;
+
   try {
+    const connectDB = (await import("@/lib/db.js")).default;
+    const Restaurant = (await import("@/models/Restaurant.js")).default;
     await connectDB();
 
-    const vendorUser = await getMockVendor();
-    if (!vendorUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const restaurant = await Restaurant.findOne({ ownerId: vendorUser._id });
+    const restaurant = await Restaurant.findOne({ ownerId: user._id }).lean();
     if (!restaurant) {
-      return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+      return NextResponse.json({ restaurant: null });
     }
 
     return NextResponse.json({ restaurant });
   } catch (error) {
     console.error("Error fetching restaurant profile:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch restaurant profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ restaurant: null });
+  }
+}
+
+export async function POST(req) {
+  const { user, error } = await requireRole("vendor", "admin");
+  if (error) return error;
+
+  try {
+    const connectDB = (await import("@/lib/db.js")).default;
+    const Restaurant = (await import("@/models/Restaurant.js")).default;
+    await connectDB();
+
+    // Check if vendor already has a restaurant
+    const existing = await Restaurant.findOne({ ownerId: user._id });
+    if (existing) {
+      return NextResponse.json({ error: "You already have a restaurant. Use PUT to update it." }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { name, description, logoUrl, category, address, operatingHours } = body;
+
+    if (!name || !category || !address?.street || !address?.city) {
+      return NextResponse.json({ error: "Name, category, and full address are required." }, { status: 400 });
+    }
+
+    const restaurant = await Restaurant.create({
+      name: name.trim(),
+      ownerId: user._id,
+      description: description?.trim() || "",
+      logoUrl: logoUrl?.trim() || "",
+      category: category.trim(),
+      address: {
+        street: address.street.trim(),
+        city: address.city.trim(),
+        district: address.district?.trim() || "",
+        postalCode: address.postalCode?.trim() || "",
+        label: address.label?.trim() || "Main",
+      },
+      location: {
+        type: "Point",
+        coordinates: [90.4152, 23.7936], // Default: Dhaka
+      },
+      operatingHours: operatingHours || [
+        { day: "mon", open: "09:00", close: "22:00", isClosed: false },
+        { day: "tue", open: "09:00", close: "22:00", isClosed: false },
+        { day: "wed", open: "09:00", close: "22:00", isClosed: false },
+        { day: "thu", open: "09:00", close: "22:00", isClosed: false },
+        { day: "fri", open: "09:00", close: "22:00", isClosed: false },
+        { day: "sat", open: "09:00", close: "22:00", isClosed: false },
+        { day: "sun", open: "10:00", close: "21:00", isClosed: false },
+      ],
+      isApproved: true,
+      isOpen: true,
+    });
+
+    return NextResponse.json({ message: "Restaurant created successfully", restaurant }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating restaurant:", error);
+    return NextResponse.json({ error: "Failed to create restaurant" }, { status: 500 });
   }
 }
 
 export async function PUT(req) {
+  const { user, error } = await requireRole("vendor", "admin");
+  if (error) return error;
+
   try {
+    const connectDB = (await import("@/lib/db.js")).default;
+    const Restaurant = (await import("@/models/Restaurant.js")).default;
     await connectDB();
 
-    const vendorUser = await getMockVendor();
-    if (!vendorUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const restaurant = await Restaurant.findOne({ ownerId: vendorUser._id });
+    const restaurant = await Restaurant.findOne({ ownerId: user._id });
     if (!restaurant) {
-      return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+      return NextResponse.json({ error: "Restaurant not found. Create one first." }, { status: 404 });
     }
 
     const body = await req.json();
     const { name, description, logoUrl, category, address, operatingHours, isOpen } = body;
 
-    // Optional updates
     if (name !== undefined) restaurant.name = name.trim();
     if (description !== undefined) restaurant.description = description.trim();
     if (logoUrl !== undefined) restaurant.logoUrl = logoUrl.trim();
@@ -55,10 +108,11 @@ export async function PUT(req) {
 
     if (address !== undefined) {
       restaurant.address = {
-        street: address.street?.trim() || "",
-        city: address.city?.trim() || "",
+        street: address.street?.trim() || restaurant.address.street,
+        city: address.city?.trim() || restaurant.address.city,
         district: address.district?.trim() || "",
         postalCode: address.postalCode?.trim() || "",
+        label: address.label?.trim() || "Main",
       };
     }
 
@@ -73,15 +127,9 @@ export async function PUT(req) {
 
     await restaurant.save();
 
-    return NextResponse.json({
-      message: "Restaurant profile updated successfully",
-      restaurant,
-    });
+    return NextResponse.json({ message: "Restaurant updated successfully", restaurant });
   } catch (error) {
     console.error("Error updating restaurant profile:", error);
-    return NextResponse.json(
-      { error: "Failed to update restaurant profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update restaurant profile" }, { status: 500 });
   }
 }

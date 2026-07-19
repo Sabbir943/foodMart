@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import AISearchBar from "@/components/AISearchBar";
 
 // All 14 TheMealDB categories (matches backend)
 const CATEGORIES = [
@@ -179,6 +180,7 @@ function RestaurantsContent() {
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [aiResults, setAiResults] = useState(null);
 
   // Sync local search input when URL changes externally
   useEffect(() => { setSearchInput(urlSearch); }, [urlSearch]);
@@ -208,8 +210,9 @@ function RestaurantsContent() {
     router.push(`/restaurants?${p.toString()}`, { scroll: false });
   }, [urlSearch, urlCategory, urlRating, urlOpenNow, urlPage, router]);
 
-  // ── Fetch restaurants whenever URL params change ───────────────────────────
+  // ── Fetch restaurants whenever URL params change (skip if AI results active) ──
   useEffect(() => {
+    if (aiResults) return; // Skip fetch when AI results are showing
     let cancelled = false;
     setLoading(true);
     setError("");
@@ -240,9 +243,9 @@ function RestaurantsContent() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [urlSearch, urlCategory, urlRating, urlOpenNow, urlPage]);
+  }, [urlSearch, urlCategory, urlRating, urlOpenNow, urlPage, aiResults]);
 
-  const clearFilters = () => { router.push("/restaurants"); setSearchInput(""); };
+  const clearFilters = () => { router.push("/restaurants"); setSearchInput(""); setAiResults(null); };
 
   const hasActiveFilters = urlSearch || urlCategory || urlRating || urlOpenNow;
 
@@ -261,32 +264,66 @@ function RestaurantsContent() {
             Browse through fresh menus and order from the best local kitchens.
           </p>
 
-          {/* ── Top Search Bar ─────────────────────────────────────────── */}
-          <div className="mt-8 flex max-w-xl">
-            <div className="relative flex-1">
-              <span className="absolute inset-y-0 left-4 flex items-center text-neutral-400 pointer-events-none">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                </svg>
-              </span>
-              <input
-                id="restaurant-search"
-                type="text"
-                placeholder="Search restaurant name or cuisine…"
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full rounded-2xl bg-white/10 border border-white/20 pl-11 pr-4 py-3.5 text-white placeholder-neutral-400 focus:outline-none focus:border-amber-500 text-sm backdrop-blur-md transition-all"
-              />
-              {searchInput && (
-                <button
-                  onClick={() => handleSearchChange("")}
-                  className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-white cursor-pointer"
-                >
-                  ×
-                </button>
-              )}
-            </div>
+          {/* ── Top Search Bar (AI-powered) ─────────────────────────────── */}
+          <div className="mt-8 max-w-2xl">
+            <AISearchBar onResults={(results, parsed) => {
+              if (results.length > 0) {
+                setAiResults(results);
+                setRestaurants(results.map((r) => ({
+                  ...r,
+                  description: `AI found: ${r.name} at ${r.restaurantName}`,
+                  logoUrl: r.imageUrl,
+                  isOpen: true,
+                  isApproved: true,
+                  deliveryTime: "25-40",
+                  address: { city: "Dhaka", district: "Dhaka", street: "Main Street" },
+                })));
+                setPagination({ total: results.length, page: 1, pages: 1 });
+              } else if (!parsed) {
+                setAiResults(null);
+              }
+            }} />
+            {aiResults && (
+              <button
+                onClick={() => {
+                  setAiResults(null);
+                  pushUrl({});
+                }}
+                className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
+              >
+                ← Back to all restaurants
+              </button>
+            )}
           </div>
+
+          {/* Fallback search (kept for traditional filtering) */}
+          {!aiResults && (
+            <div className="mt-4 flex max-w-xl">
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-4 flex items-center text-neutral-400 pointer-events-none">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                  </svg>
+                </span>
+                <input
+                  id="restaurant-search"
+                  type="text"
+                  placeholder="Search restaurant name or cuisine…"
+                  value={searchInput}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 pl-11 pr-4 py-3.5 text-white placeholder-neutral-400 focus:outline-none focus:border-amber-500 text-sm backdrop-blur-md transition-all"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => handleSearchChange("")}
+                    className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-white cursor-pointer"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -439,19 +476,24 @@ function RestaurantsContent() {
               ))}
             </div>
 
-            {/* Pagination */}
-            <Pagination
-              page={urlPage}
-              pages={pagination.pages}
-              onPageChange={(p) => {
-                pushUrl({ page: String(p) });
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            />
+            {/* Pagination (hidden for AI results) */}
+            {!aiResults && (
+              <Pagination
+                page={urlPage}
+                pages={pagination.pages}
+                onPageChange={(p) => {
+                  pushUrl({ page: String(p) });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
+            )}
 
             {/* Summary */}
             <p className="text-center text-xs text-neutral-400 mt-6">
-              Showing {(urlPage - 1) * PER_PAGE + 1}–{Math.min(urlPage * PER_PAGE, pagination.total)} of {pagination.total} restaurants
+              {aiResults
+                ? `AI found ${restaurants.length} dishes matching your search`
+                : `Showing ${(urlPage - 1) * PER_PAGE + 1}–${Math.min(urlPage * PER_PAGE, pagination.total)} of ${pagination.total} restaurants`
+              }
             </p>
           </>
         )}
