@@ -13,6 +13,7 @@
  * because Next.js resolves static routes before this catch-all.
  */
 
+import { NextResponse } from "next/server";
 import { toNextJsHandler } from "better-auth/next-js";
 import { getAuth } from "@/lib/auth.js";
 
@@ -28,11 +29,27 @@ async function getHandler() {
 }
 
 export async function GET(request) {
-  const handler = await getHandler();
-  return handler.GET(request);
+  try {
+    const handler = await getHandler();
+    return handler.GET(request);
+  } catch (error) {
+    console.error("Auth GET error:", error.message);
+    return NextResponse.json(
+      { error: "Authentication service unavailable. Please ensure MongoDB is running." },
+      { status: 503 }
+    );
+  }
 }
 
 export async function POST(request) {
-  const handler = await getHandler();
-  return handler.POST(request);
+  try {
+    const handler = await getHandler();
+    return handler.POST(request);
+  } catch (error) {
+    console.error("Auth POST error:", error.message);
+    return NextResponse.json(
+      { error: "Authentication service unavailable. Please ensure MongoDB is running." },
+      { status: 503 }
+    );
+  }
 }

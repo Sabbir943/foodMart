@@ -13,7 +13,7 @@ const userSchema = new Schema(
       trim: true,
     },
     phone: { type: String, required: false, default: "", trim: true },
-    passwordHash: { type: String, required: true, select: false },
+    passwordHash: { type: String, required: false, default: null, select: false },
     role: {
       type: String,
       enum: ["customer", "vendor", "rider", "admin"],

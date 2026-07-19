@@ -2,33 +2,33 @@
  * app/api/auth/signup/route.js
  *
  * Custom signup route that:
- * 1. Creates a user via Better Auth (handles hashing + session cookie)
- * 2. Also creates our custom User model entry with role, addresses, etc.
- * 3. Creates role-specific profiles (Restaurant for vendors, Rider for riders)
- *
- * Phone number is NOT collected (as per user request).
+ * 1. Validates input
+ * 2. Checks for existing email in our User model (soft — skipped if DB is down)
+ * 3. Creates a user via Better Auth (handles password hashing + session cookie)
+ * 4. Creates our custom User model entry with role, addresses, etc.
+ * 5. Creates role-specific profiles (Restaurant for vendors, Rider for riders)
  */
 
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth.js";
-import connectDB from "@/lib/db.js";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    await connectDB();
-    const auth = await getAuth();
-
     const body = await req.json();
     const {
-      name, email, password,
+      name,
+      email,
+      password,
       role,
-      restaurantName, restaurantAddress, restaurantCategory,
+      restaurantName,
+      restaurantAddress,
+      restaurantCategory,
       vehicleType,
     } = body;
 
-    // ── Validation ────────────────────────────────────────────────────────
+    // ── Validation ──────────────────────────────────────────────────────────
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Name, email, and password are required" },
@@ -45,8 +45,10 @@ export async function POST(req) {
     const emailLower = email.toLowerCase().trim();
     const userRole = role || "customer";
 
-    // ── Check if email already exists in our User model ───────────────────
+    // ── Check duplicate email (soft — won't crash if DB is unavailable) ────
     try {
+      const connectDB = (await import("@/lib/db.js")).default;
+      await connectDB();
       const User = (await import("@/models/User.js")).default;
       const existing = await User.findOne({ email: emailLower }).lean();
       if (existing) {
@@ -56,10 +58,21 @@ export async function POST(req) {
         );
       }
     } catch {
-      // DB unavailable — Better Auth will catch duplicates
+      // DB unavailable — Better Auth will catch duplicates on its side
     }
 
-    // ── Sign up via Better Auth ───────────────────────────────────────────
+    // ── Sign up via Better Auth ──────────────────────────────────────────────
+    let auth;
+    try {
+      auth = await getAuth();
+    } catch (authErr) {
+      console.error("Auth init error:", authErr.message);
+      return NextResponse.json(
+        { error: "Database is not reachable. Please ensure MongoDB is running." },
+        { status: 503 }
+      );
+    }
+
     const signUpResponse = await auth.api.signUpEmail({
       body: {
         name: name.trim(),
@@ -72,8 +85,13 @@ export async function POST(req) {
 
     if (!signUpResponse.ok) {
       const data = await signUpResponse.json().catch(() => ({}));
+      const msg = data.message || data.error || "Signup failed";
+      // Better Auth returns "User already exists" — make it friendlier
+      const friendlyMsg = msg.toLowerCase().includes("already")
+        ? "An account with this email already exists"
+        : msg;
       return NextResponse.json(
-        { error: data.message || data.error || "Signup failed" },
+        { error: friendlyMsg },
         { status: signUpResponse.status }
       );
     }
@@ -81,11 +99,14 @@ export async function POST(req) {
     const sessionData = await signUpResponse.json();
     const betterAuthUserId = sessionData.user?.id;
 
-    // ── Create our custom User model entry ────────────────────────────────
+    // ── Create our custom User model + role-specific profile ────────────────
     let dbUserId = null;
     try {
-      const User = (await import("@/models/User.js")).default;
+      const connectDB = (await import("@/lib/db.js")).default;
+      await connectDB();
       const { hashPassword } = await import("@/lib/auth.js");
+      const User = (await import("@/models/User.js")).default;
+
       const passwordHash = await hashPassword(password);
 
       const dbUser = await User.create({
@@ -102,7 +123,9 @@ export async function POST(req) {
       // Create role-specific profiles
       if (userRole === "vendor") {
         const Restaurant = (await import("@/models/Restaurant.js")).default;
-        const existingRestaurant = await Restaurant.findOne({ ownerId: dbUser._id });
+        const existingRestaurant = await Restaurant.findOne({
+          ownerId: dbUser._id,
+        });
         if (!existingRestaurant) {
           await Restaurant.create({
             name: restaurantName || `${name.trim()}'s Kitchen`,
@@ -131,7 +154,10 @@ export async function POST(req) {
             userId: dbUser._id,
             vehicleType: vehicleType || "motorcycle",
             isAvailable: true,
-            currentLocation: { type: "Point", coordinates: [90.4125, 23.8103] },
+            currentLocation: {
+              type: "Point",
+              coordinates: [90.4125, 23.8103],
+            },
             rating: 5.0,
           });
         }
@@ -141,7 +167,7 @@ export async function POST(req) {
       // Better Auth user was already created — continue anyway
     }
 
-    // ── Return success with session cookies ───────────────────────────────
+    // ── Return success with session cookies ──────────────────────────────────
     const response = NextResponse.json({
       message: "Account created successfully",
       user: {
@@ -152,7 +178,7 @@ export async function POST(req) {
       },
     });
 
-    // Forward Better Auth cookies (session token)
+    // Forward Better Auth session cookie to the client
     const setCookieHeader = signUpResponse.headers.get("set-cookie");
     if (setCookieHeader) {
       response.headers.set("set-cookie", setCookieHeader);

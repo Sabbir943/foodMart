@@ -3,30 +3,39 @@
  *
  * Returns the current session user using Better Auth.
  * Falls back to our User model to get role, isBlocked, addresses.
+ * Better Auth session is always checked first; DB lookup is a soft enhancement.
  */
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth.js";
-import connectDB from "@/lib/db.js";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req) {
+export async function GET() {
   try {
-    await connectDB();
-    const auth = await getAuth();
-    const headersList = await headers();
+    // ── Get Better Auth session ────────────────────────────────────────────
+    let auth;
+    try {
+      auth = await getAuth();
+    } catch {
+      // DB not reachable — no session possible
+      return NextResponse.json({ user: null });
+    }
 
+    const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
 
     if (!session?.user) {
       return NextResponse.json({ user: null });
     }
 
-    // Look up the full user in our model (for role, isBlocked, addresses)
+    // ── Enrich with our User model (role, isBlocked, addresses) ─────────────
     try {
+      const connectDB = (await import("@/lib/db.js")).default;
+      await connectDB();
       const User = (await import("@/models/User.js")).default;
+
       const dbUser = await User.findOne({
         email: session.user.email.toLowerCase(),
       })
@@ -34,6 +43,7 @@ export async function GET(req) {
         .lean();
 
       if (dbUser) {
+        // Blocked users get treated as logged out
         if (dbUser.isBlocked) return NextResponse.json({ user: null });
 
         return NextResponse.json({
@@ -51,7 +61,7 @@ export async function GET(req) {
       // DB unavailable — fall through to session data
     }
 
-    // Return from Better Auth session data
+    // ── Fallback: return from Better Auth session data ───────────────────────
     return NextResponse.json({
       user: {
         id: session.user.id,

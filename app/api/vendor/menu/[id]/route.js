@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db.js";
 import MenuItem from "@/models/MenuItem.js";
 import Restaurant from "@/models/Restaurant.js";
-import { getMockVendor } from "@/lib/auth-mock.js";
+import { requireRole } from "@/lib/server-auth.js";
 import mongoose from "mongoose";
 
 export async function PUT(req, { params }) {
+  const { user, error } = await requireRole("vendor", "admin");
+  if (error) return error;
+
   try {
     await connectDB();
 
@@ -15,17 +18,11 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: "Invalid item ID format" }, { status: 400 });
     }
 
-    const vendorUser = await getMockVendor();
-    if (!vendorUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const restaurant = await Restaurant.findOne({ ownerId: vendorUser._id });
+    const restaurant = await Restaurant.findOne({ ownerId: user._id });
     if (!restaurant) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    // Verify item belongs to this restaurant
     const menuItem = await MenuItem.findOne({ _id: id, restaurantId: restaurant._id });
     if (!menuItem) {
       return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
@@ -34,7 +31,6 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const { name, description, price, imageUrl, category, variants, isAvailable } = body;
 
-    // Optional updates
     if (name !== undefined) menuItem.name = name.trim();
     if (description !== undefined) menuItem.description = description.trim();
     if (price !== undefined) menuItem.price = Number(price);
@@ -66,6 +62,9 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  const { user, error } = await requireRole("vendor", "admin");
+  if (error) return error;
+
   try {
     await connectDB();
 
@@ -75,17 +74,11 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Invalid item ID format" }, { status: 400 });
     }
 
-    const vendorUser = await getMockVendor();
-    if (!vendorUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const restaurant = await Restaurant.findOne({ ownerId: vendorUser._id });
+    const restaurant = await Restaurant.findOne({ ownerId: user._id });
     if (!restaurant) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    // Verify and delete
     const result = await MenuItem.deleteOne({ _id: id, restaurantId: restaurant._id });
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
