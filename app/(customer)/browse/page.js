@@ -2,8 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { Card, Button } from "@heroui/react";
+import FoodCard from "@/components/FoodCard";
 
 const MEAL_CATEGORIES = [
   { name: "Chicken", emoji: "🍗" },
@@ -140,35 +139,7 @@ function BrowseFoodContent() {
             <p className="text-sm text-neutral-500 mb-6">{meals.length} dishes in <strong>{category}</strong></p>
             <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {meals.map((meal) => (
-                <Card
-                  key={meal._id}
-                  className="rounded-2xl border border-neutral-100 overflow-hidden shadow-soft group hover:-translate-y-1 hover:shadow-soft-lg transition-all duration-300"
-                >
-                  <div className="relative h-44 bg-neutral-100 overflow-hidden">
-                    <img
-                      src={meal.imageUrl}
-                      alt={meal.name}
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                      <span className="text-white text-xs font-bold">৳ {meal.price}</span>
-                    </div>
-                  </div>
-                  <Card.Header className="px-4 py-3">
-                    <Card.Title className="text-sm font-bold text-black line-clamp-1">{meal.name}</Card.Title>
-                    <Card.Description className="text-xs text-neutral-500 mt-0.5">{meal.category}</Card.Description>
-                  </Card.Header>
-                  <Card.Footer className="px-4 pb-4 pt-0">
-                    <Button
-                      size="sm"
-                      className="w-full rounded-xl bg-black text-white hover:bg-neutral-800 font-bold text-xs"
-                      as={Link}
-                      href={`/restaurants/${meal.restaurantId}`}
-                    >
-                      Order Now
-                    </Button>
-                  </Card.Footer>
-                </Card>
+                <FoodCard key={meal._id} item={meal} theme="light" />
               ))}
             </div>
           </>

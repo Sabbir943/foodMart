@@ -25,6 +25,7 @@ export async function POST(req) {
       restaurantName,
       restaurantAddress,
       restaurantCategory,
+      restaurantImageUrl,
       vehicleType,
     } = body;
 
@@ -131,6 +132,7 @@ export async function POST(req) {
             name: restaurantName || `${name.trim()}'s Kitchen`,
             ownerId: dbUser._id,
             description: "Freshly prepared meals.",
+            logoUrl: restaurantImageUrl || "",
             category: restaurantCategory || "General",
             address: {
               street: restaurantAddress || "Main Street",

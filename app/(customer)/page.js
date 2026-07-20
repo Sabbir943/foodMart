@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AIRecommendations from "@/components/AIRecommendations";
+import FoodCard from "@/components/FoodCard";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -75,12 +76,25 @@ export default function CustomerHomePage() {
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  // Fetch featured restaurants
+  // Fetch featured restaurants (deduplicated by name)
   useEffect(() => {
     let mounted = true;
-    fetch("/api/restaurants?limit=6")
+    fetch("/api/restaurants?limit=20")
       .then((r) => r.ok ? r.json() : { restaurants: [] })
-      .then((d) => { if (mounted) setRestaurants(d.restaurants || []); })
+      .then((d) => {
+        if (!mounted) return;
+        const raw = d.restaurants || [];
+        const seen = new Set();
+        const unique = [];
+        for (const r of raw) {
+          const key = (r.name || "").toLowerCase().trim();
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(r);
+          }
+        }
+        setRestaurants(unique.slice(0, 6));
+      })
       .catch(() => {})
       .finally(() => { if (mounted) setRestLoading(false); });
     return () => { mounted = false; };
@@ -381,30 +395,7 @@ export default function CustomerHomePage() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {popularDishes.map((dish) => (
-                <Link
-                  key={dish._id}
-                  href={`/restaurants/${dish.restaurantId}`}
-                  className="group rounded-2xl bg-neutral-900 border border-neutral-800 overflow-hidden hover:border-amber-500/50 hover:-translate-y-1 transition-all duration-300"
-                >
-                  <div className="relative h-44 overflow-hidden">
-                    <img
-                      src={dish.imageUrl}
-                      alt={dish.name}
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                      <span className="text-white text-xs font-bold line-clamp-1 flex-1 mr-2">{dish.name}</span>
-                      <span className="shrink-0 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
-                        ৳{dish.price}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <span className="text-xs text-neutral-400">{dish.category} Kitchen</span>
-                    <span className="text-xs font-bold text-amber-400 group-hover:underline">Order →</span>
-                  </div>
-                </Link>
+                <FoodCard key={dish._id} item={dish} theme="dark" />
               ))}
             </div>
           )}

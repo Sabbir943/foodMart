@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import FoodCard from "./FoodCard";
 
 function SkeletonCard() {
   return (
@@ -68,38 +68,13 @@ export default function AIRecommendations() {
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {recommendations.map((dish) => (
-            <Link
+            <FoodCard
               key={dish.id || dish._id}
-              href={`/restaurants/${dish.restaurantId}`}
-              className="group rounded-2xl bg-neutral-800 border border-neutral-700 overflow-hidden hover:border-amber-500/50 hover:-translate-y-1 transition-all duration-300"
-            >
-              <div className="relative h-40 overflow-hidden">
-                <img
-                  src={dish.imageUrl}
-                  alt={dish.name}
-                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                  <span className="text-white text-sm font-bold line-clamp-1 flex-1 mr-2">{dish.name}</span>
-                  <span className="shrink-0 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
-                    ৳{dish.price}
-                  </span>
-                </div>
-                {/* AI badge */}
-                <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-amber-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-amber-500/30">
-                  AI Pick
-                </span>
-              </div>
-              <div className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-neutral-400">{dish.category}</span>
-                  <span className="text-neutral-600">•</span>
-                  <span className="text-xs text-neutral-500">{dish.reason}</span>
-                </div>
-                <span className="text-xs font-bold text-amber-400 group-hover:underline">Order →</span>
-              </div>
-            </Link>
+              item={dish}
+              theme="dark"
+              badge="AI Pick"
+              subtitle={dish.reason}
+            />
           ))}
         </div>
       </div>

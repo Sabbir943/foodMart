@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -11,7 +11,15 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/";
-  const { refetch } = useAuth();
+  const { user, loading: authLoading, refetch } = useAuth();
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (user.role === "admin") window.location.href = "/admin/dashboard";
+    else if (user.role === "vendor") window.location.href = "/vendor/dashboard";
+    else if (user.role === "rider") window.location.href = "/rider/dashboard";
+    else window.location.href = returnTo;
+  }, [user, authLoading, returnTo]);
 
   const {
     register,
@@ -41,14 +49,15 @@ function LoginContent() {
       // Re-fetch session so Navbar updates immediately
       await refetch();
 
-      // Redirect based on role
-      const role = result.user.role;
-      if (role === "admin") router.push("/admin/dashboard");
-      else if (role === "vendor") router.push("/vendor/dashboard");
-      else if (role === "rider") router.push("/rider/dashboard");
-      else router.push(returnTo);
+      // Small delay to ensure session cookie is propagated
+      await new Promise((r) => setTimeout(r, 500));
 
-      router.refresh();
+      // Hard redirect to ensure session cookie is sent with the request
+      const role = result.user.role;
+      if (role === "admin") window.location.href = "/admin/dashboard";
+      else if (role === "vendor") window.location.href = "/vendor/dashboard";
+      else if (role === "rider") window.location.href = "/rider/dashboard";
+      else window.location.href = returnTo;
     } catch (err) {
       toast.error(err.message || "Invalid email or password. Please try again.");
     } finally {

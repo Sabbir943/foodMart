@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import VendorShell from "@/components/VendorShell";
 
 const STATUS_LABELS = {
   placed: { label: "New", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
@@ -39,13 +40,10 @@ export default function VendorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [noRestaurant, setNoRestaurant] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) router.replace("/auth/login?returnTo=/vendor/dashboard");
-    if (!authLoading && user && user.role !== "vendor" && user.role !== "admin") router.replace("/");
-  }, [user, authLoading, router]);
+  // No auto-redirect — let the UI handle unauthenticated state below
 
   useEffect(() => {
-    if (!user || (user.role !== "vendor" && user.role !== "admin")) return;
+    if (!user) return;
 
     const loadDashboard = async () => {
       try {
@@ -77,33 +75,55 @@ export default function VendorDashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
-          <p className="text-sm text-neutral-500 font-medium">Loading dashboard...</p>
+      <VendorShell>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
+            <p className="text-sm text-neutral-500 font-medium">Loading dashboard...</p>
+          </div>
         </div>
-      </div>
+      </VendorShell>
     );
   }
 
-  if (!user) return null;
-
-  // No restaurant yet — show setup prompt
-  if (noRestaurant) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-neutral-50">
-        <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 py-10 px-4">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-2">Vendor Panel</p>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Welcome, {user.name}!</h1>
+      <VendorShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center space-y-4">
+            <span className="text-5xl">🔒</span>
+            <h2 className="text-xl font-bold text-black">You are not logged in</h2>
+            <p className="text-sm text-neutral-500">Please sign in to access the vendor dashboard.</p>
+            <a href="/auth/login" className="inline-block rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors">
+              Sign In
+            </a>
           </div>
         </div>
-        <div className="mx-auto max-w-xl px-4 py-20 text-center">
-          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-12">
+      </VendorShell>
+    );
+  }
+
+  return (
+    <VendorShell>
+      {/* Header */}
+      <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 py-10 px-4">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-2">Vendor Panel</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{restaurant?.name || "Your Kitchen"}</h1>
+          <p className="mt-1 text-sm text-neutral-400">
+            Welcome back, <span className="text-white font-semibold">{user.name}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        {/* No Restaurant Setup */}
+        {noRestaurant && (
+          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-12 text-center">
             <span className="text-6xl">🏪</span>
             <h2 className="mt-6 text-2xl font-extrabold text-black">Set Up Your Restaurant</h2>
             <p className="mt-3 text-sm text-neutral-500 max-w-sm mx-auto">
-              Create your restaurant profile to start listing menu items and receiving orders from customers.
+              Create your restaurant profile to start listing menu items and receiving orders.
             </p>
             <Link
               href="/vendor/restaurant"
@@ -112,38 +132,8 @@ export default function VendorDashboardPage() {
               Setup Restaurant
             </Link>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 py-10 px-4">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-2">Vendor Panel</p>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">{restaurant?.name || "Your Kitchen"}</h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              Welcome back, <span className="text-white font-semibold">{user.name}</span>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/vendor/restaurant" className="rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-all">
-              Restaurant
-            </Link>
-            <Link href="/vendor/menu" className="rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-all">
-              Menu
-            </Link>
-            <Link href="/vendor/orders" className="rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2.5 text-sm font-bold text-white transition-all">
-              Orders
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon="📦" label="Today's Orders" value={stats?.todayOrdersCount ?? "0"} sub="Placed today" borderColor="border-l-blue-500" />
@@ -252,8 +242,8 @@ export default function VendorDashboardPage() {
         {/* Quick Actions */}
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { icon: "🍕", title: "Manage Menu", desc: "Add, edit, or remove dishes", href: "/vendor/menu", color: "from-blue-50 to-blue-100 border-blue-200" },
-            { icon: "📋", title: "All Orders", desc: "View and manage incoming orders", href: "/vendor/orders", color: "from-amber-50 to-amber-100 border-amber-200" },
+            { icon: "🍕", title: "Add Food", desc: "Add a new dish to your menu", href: "/vendor/add-food", color: "from-green-50 to-green-100 border-green-200" },
+            { icon: "📋", title: "Manage Food", desc: "Edit or remove menu items", href: "/vendor/menu", color: "from-blue-50 to-blue-100 border-blue-200" },
             { icon: "⚙️", title: "Restaurant Settings", desc: "Update your restaurant details", href: "/vendor/restaurant", color: "from-purple-50 to-purple-100 border-purple-200" },
           ].map((action) => (
             <Link
@@ -269,6 +259,6 @@ export default function VendorDashboardPage() {
           ))}
         </div>
       </div>
-    </div>
+    </VendorShell>
   );
 }

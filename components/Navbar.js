@@ -35,9 +35,7 @@ export default function Navbar() {
         ];
       case "vendor":
         return [
-          { href: "/vendor/dashboard", label: "Dashboard" },
-          { href: "/vendor/menu", label: "My Menu" },
-          { href: "/vendor/orders", label: "Orders" },
+          { href: "/vendor/dashboard", label: "Vendor Panel" },
         ];
       case "rider":
         return [

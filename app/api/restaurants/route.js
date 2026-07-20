@@ -86,9 +86,16 @@ export async function GET(req) {
     ]);
 
     if (total > 0) {
+      const seen = new Set();
+      const unique = dbRestaurants.filter((r) => {
+        const key = (r.name || "").toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       return NextResponse.json({
-        restaurants: dbRestaurants,
-        pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+        restaurants: unique,
+        pagination: { total: unique.length, page, limit, pages: Math.ceil(unique.length / limit) },
       });
     }
   } catch (err) {

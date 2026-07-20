@@ -410,10 +410,10 @@ export default function TrackOrderPage({ params }) {
                       {item.variant && (
                         <p className="text-xs text-neutral-500">Variant: {item.variant}</p>
                       )}
-                      <p className="text-xs text-neutral-500">Qty: {item.qty} × ${item.price.toFixed(2)}</p>
+                      <p className="text-xs text-neutral-500">Qty: {item.qty} × ৳{item.price.toFixed(2)}</p>
                     </div>
                     <span className="font-semibold text-black">
-                      ${(item.price * item.qty).toFixed(2)}
+                      ৳{(item.price * item.qty).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -423,19 +423,19 @@ export default function TrackOrderPage({ params }) {
               <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2 text-sm text-neutral-600">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="text-black font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="text-black font-medium">৳{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span className="text-black font-medium">${deliveryFee.toFixed(2)}</span>
+                  <span className="text-black font-medium">৳{deliveryFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax (10%)</span>
-                  <span className="text-black font-medium">${tax.toFixed(2)}</span>
+                  <span className="text-black font-medium">৳{tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t border-neutral-100 pt-3 text-base font-bold text-black">
                   <span>Total Amount</span>
-                  <span>${order.totalAmount.toFixed(2)}</span>
+                  <span>৳{order.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </Card.Content>

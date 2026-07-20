@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import VendorShell from "@/components/VendorShell";
 
 const CATEGORIES = [
   "Pizza", "Pasta", "Burgers", "Italian", "Asian", "Chinese",
@@ -36,9 +37,22 @@ export default function VendorRestaurantPage() {
     operatingHours: DAYS.map((day) => ({ day, open: "09:00", close: "22:00", isClosed: day === "sun" })),
   });
 
-  useEffect(() => {
-    if (!authLoading && !user) router.replace("/auth/login?returnTo=/vendor/restaurant");
-  }, [user, authLoading, router]);
+  if (!user && !authLoading) {
+    return (
+      <VendorShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center space-y-4">
+            <span className="text-5xl">🔒</span>
+            <h2 className="text-xl font-bold text-black">You are not logged in</h2>
+            <p className="text-sm text-neutral-500">Please sign in to access the vendor dashboard.</p>
+            <a href="/auth/login" className="inline-block rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors">
+              Sign In
+            </a>
+          </div>
+        </div>
+      </VendorShell>
+    );
+  }
 
   const fetchRestaurant = async () => {
     try {
@@ -126,23 +140,22 @@ export default function VendorRestaurantPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
-          <p className="text-sm text-neutral-500 font-medium">Loading restaurant...</p>
+      <VendorShell>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
+            <p className="text-sm text-neutral-500 font-medium">Loading restaurant...</p>
+          </div>
         </div>
-      </div>
+      </VendorShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <VendorShell>
       {/* Header */}
       <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 py-10 px-4">
         <div className="mx-auto max-w-3xl">
-          <Link href="/vendor/dashboard" className="text-xs font-bold text-amber-400 hover:text-amber-300 mb-3 inline-block">
-            ← Back to Dashboard
-          </Link>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
             {isNew ? "Setup Your Restaurant" : "Restaurant Settings"}
           </h1>
@@ -308,6 +321,6 @@ export default function VendorRestaurantPage() {
           </div>
         </form>
       </div>
-    </div>
+    </VendorShell>
   );
 }

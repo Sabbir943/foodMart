@@ -36,16 +36,11 @@ export default function SignupPage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Signup failed");
 
-      toast.success("Account created! Welcome to FoodMart 🎉");
+      toast.success("Account created! Please log in.");
 
-      // Re-fetch session so Navbar shows the new user immediately
-      await refetch();
-
-      // Redirect based on role
+      // Redirect to login for all roles
       setTimeout(() => {
-        if (role === "vendor") router.push("/vendor/dashboard");
-        else if (role === "rider") router.push("/rider/dashboard");
-        else router.push("/");
+        router.push("/auth/login");
         router.refresh();
       }, 800);
     } catch (err) {
@@ -183,6 +178,16 @@ export default function SignupPage() {
                       <option value="Asian">Asian</option>
                     </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700">Restaurant Image URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/restaurant.jpg"
+                    className={inputClass}
+                    {...register("restaurantImageUrl")}
+                  />
+                  <p className="mt-1 text-[10px] text-neutral-400">Paste a URL for your restaurant cover image</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700">Address</label>

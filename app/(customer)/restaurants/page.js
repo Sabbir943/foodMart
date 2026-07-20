@@ -232,7 +232,17 @@ function RestaurantsContent() {
       })
       .then((data) => {
         if (cancelled) return;
-        setRestaurants(data.restaurants || []);
+        const raw = data.restaurants || [];
+        const seen = new Set();
+        const unique = [];
+        for (const r of raw) {
+          const key = (r.name || "").toLowerCase().trim();
+          if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(r);
+          }
+        }
+        setRestaurants(unique);
         setPagination(
           data.pagination || { total: 0, page: urlPage, pages: 0 }
         );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import VendorShell from "@/components/VendorShell";
 
 const CATEGORIES = [
   "Pizza", "Pasta", "Burgers", "Italian", "Asian", "Chinese",
@@ -38,9 +39,22 @@ export default function VendorMenuPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
 
-  useEffect(() => {
-    if (!authLoading && !user) router.replace("/auth/login?returnTo=/vendor/menu");
-  }, [user, authLoading, router]);
+  if (!user && !authLoading) {
+    return (
+      <VendorShell>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center space-y-4">
+            <span className="text-5xl">🔒</span>
+            <h2 className="text-xl font-bold text-black">You are not logged in</h2>
+            <p className="text-sm text-neutral-500">Please sign in to access the vendor dashboard.</p>
+            <a href="/auth/login" className="inline-block rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors">
+              Sign In
+            </a>
+          </div>
+        </div>
+      </VendorShell>
+    );
+  }
 
   const fetchMenu = async () => {
     try {
@@ -155,23 +169,22 @@ export default function VendorMenuPage() {
 
   if (authLoading || (loading && menuItems.length === 0)) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
-          <p className="text-sm text-neutral-500 font-medium">Loading menu...</p>
+      <VendorShell>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent mx-auto" />
+            <p className="text-sm text-neutral-500 font-medium">Loading menu...</p>
+          </div>
         </div>
-      </div>
+      </VendorShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <VendorShell>
       {/* Header */}
       <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 py-10 px-4">
         <div className="mx-auto max-w-7xl">
-          <Link href="/vendor/dashboard" className="text-xs font-bold text-amber-400 hover:text-amber-300 mb-3 inline-block">
-            ← Back to Dashboard
-          </Link>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">Manage Menu</h1>
@@ -425,6 +438,6 @@ export default function VendorMenuPage() {
           </div>
         </div>
       )}
-    </div>
+    </VendorShell>
   );
 }

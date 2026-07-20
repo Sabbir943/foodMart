@@ -109,7 +109,7 @@ export default function CartPage() {
                   <p className="text-xs text-neutral-400 mt-0.5">Option: {item.variant}</p>
                 )}
                 <span className="font-extrabold text-neutral-900 text-sm block mt-1">
-                  ${item.price.toFixed(2)} each
+                  ৳{item.price.toFixed(2)} each
                 </span>
               </div>
 
@@ -151,21 +151,21 @@ export default function CartPage() {
             <div className="space-y-3 text-sm text-neutral-600">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-bold text-neutral-800">${subtotal.toFixed(2)}</span>
+                <span className="font-bold text-neutral-800">৳{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery Fee</span>
-                <span className="font-bold text-neutral-800">${deliveryFee.toFixed(2)}</span>
+                <span className="font-bold text-neutral-800">৳{deliveryFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Vat / Tax (10%)</span>
-                <span className="font-bold text-neutral-800">${tax.toFixed(2)}</span>
+                <span className="font-bold text-neutral-800">৳{tax.toFixed(2)}</span>
               </div>
 
               {discount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-medium">
                   <span>Discount Applied ({coupon?.code})</span>
-                  <span>-${discount.toFixed(2)}</span>
+                  <span>-৳{discount.toFixed(2)}</span>
                 </div>
               )}
 
@@ -173,7 +173,7 @@ export default function CartPage() {
 
               <div className="flex justify-between text-base font-extrabold text-black">
                 <span>Total Amount</span>
-                <span>${totalAmount.toFixed(2)}</span>
+                <span>৳{totalAmount.toFixed(2)}</span>
               </div>
             </div>
 
@@ -186,7 +186,7 @@ export default function CartPage() {
                     <p className="text-[10px] text-neutral-500 mt-0.5">
                       {coupon.discountType === "percent"
                         ? `${coupon.discountValue}% Off subtotal`
-                        : `$${coupon.discountValue} Flat discount`}
+                        : `৳${coupon.discountValue} Flat discount`}
                     </p>
                   </div>
                   <button

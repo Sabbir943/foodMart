@@ -244,7 +244,7 @@ export default function RestaurantDetailPage({ params }) {
                           </p>
                           <div className="mt-3 flex items-center justify-between">
                             <span className="font-extrabold text-black text-sm">
-                              ${item.price.toFixed(2)}
+                              ৳{item.price.toFixed(0)}
                             </span>
                             <Button
                               variant="primary"
@@ -292,7 +292,7 @@ export default function RestaurantDetailPage({ params }) {
                     >
                       <span>{v.name}</span>
                       <span>
-                        ${(selectedItem.price + (v.priceModifier || 0)).toFixed(2)}
+                        ৳{(selectedItem.price + (v.priceModifier || 0)).toFixed(0)}
                       </span>
                     </button>
                   ))}

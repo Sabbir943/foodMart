@@ -366,9 +366,9 @@ export default function CheckoutPage() {
                   <div>
                     <span className="font-bold text-neutral-900">{item.name}</span>
                     {item.variant && <p className="text-[10px] text-neutral-400">({item.variant})</p>}
-                    <p className="text-neutral-500 mt-0.5">Qty: {item.qty} x ${item.price.toFixed(2)}</p>
+                    <p className="text-neutral-500 mt-0.5">Qty: {item.qty} x ৳{item.price.toFixed(2)}</p>
                   </div>
-                  <span className="font-bold text-neutral-900">${(item.price * item.qty).toFixed(2)}</span>
+                  <span className="font-bold text-neutral-900">৳{(item.price * item.qty).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -376,26 +376,26 @@ export default function CheckoutPage() {
             <div className="space-y-2 border-t border-neutral-100 pt-4 text-xs text-neutral-600">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>৳{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery Fee</span>
-                <span>${deliveryFee.toFixed(2)}</span>
+                <span>৳{deliveryFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Vat / Tax (10%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>৳{tax.toFixed(2)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-bold">
                   <span>Discount ({coupon?.code})</span>
-                  <span>-${discount.toFixed(2)}</span>
+                  <span>-৳{discount.toFixed(2)}</span>
                 </div>
               )}
               <hr className="border-neutral-100 my-2" />
               <div className="flex justify-between text-sm font-black text-black">
                 <span>Total Amount</span>
-                <span>${totalAmount.toFixed(2)}</span>
+                <span>৳{totalAmount.toFixed(2)}</span>
               </div>
             </div>
 
